@@ -8,7 +8,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 
-import com.mysql.jdbc.exceptions.jdbc4.MySQLIntegrityConstraintViolationException;
 import com.service.webservice.modal.OptionChainItemModal;
 import com.service.webservice.modal.OptionChainModal;
 import com.service.webservice.parser.ParserOptionChain;
@@ -41,12 +40,12 @@ public class MysqlCon {
 	public static Connection getConnection() {
 		Connection connection = null;
 		try {
-				Class.forName("com.mysql.jdbc.Driver");
+				Class.forName("com.mysql.cj.jdbc.Driver");
 				connection = DriverManager.getConnection(
 						"jdbc:mysql://localhost:3306/" + "stockschema"
-								+ "?useSSL=false", "root", "Johny@1986");
+								+ "?useSSL=false&autoReconnect=true", "root", "Johny@1986");
 		} catch (Exception e) {
-			System.out.println(e);
+			System.out.println("###### : "+e);
 		}
 		return connection;
 	}
@@ -82,6 +81,7 @@ public class MysqlCon {
 			if(ParserOptionChain.optionChainList.get(0) != null){
 				String time = Utils.getCurrentTime();
 				Connection conn = getConnection();
+				System.out.println("################# conn : "+conn.toString());
 				PreparedStatement pst;
 				try {
 					for(int i =0;i < ParserOptionChain.optionChainList.size();i++ ){
