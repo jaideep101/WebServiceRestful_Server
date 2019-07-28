@@ -3,7 +3,7 @@ package com.service.webservice.modal;
 import com.service.webservice.utilities.Utils;
 
 public class OptionChainModal {
-	private String strickPrice = Utils.DEFAULT;
+	private String strickCurrentPrice = Utils.DEFAULT;
 	private String stockSymbol = Utils.DEFAULT;
 	private String expiryDate = Utils.DEFAULT;
 	private OptionChainItemModal optionChainItem= null;
@@ -19,11 +19,11 @@ public class OptionChainModal {
 	public void setExpiryDate(String expiryDate) {
 		this.expiryDate = expiryDate;
 	}
-	public String getStrickPrice() {
-		return strickPrice;
+	public String getStrickCurrentPrice() {
+		return strickCurrentPrice;
 	}
-	public void setStrickPrice(String strickPrice) {
-		this.strickPrice = strickPrice;
+	public void setStrickCurrentPrice(String strickPrice) {
+		this.strickCurrentPrice = strickPrice;
 	}
 	public OptionChainItemModal getOptionChainItem() {
 		return optionChainItem;

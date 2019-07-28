@@ -16,19 +16,19 @@ public class ParserOptionChain {
 
 	public static void optionChainParser(String responseData) {
 		if (Utils.isValidString(responseData)) {
-			responseData = responseData.replaceAll("\\s", "");//Remove Space
+			optionChainList.clear();
+			String stockCurrentPrice = parseStockSymbol(responseData);
+//			System.out.println("################################## responseData : "+responseData.toString());
+			responseData = responseData.replaceAll("\\s", "");// Remove Space
 			expiryDate = parseExpiryDate(responseData);
 			if (responseData.contains("<divclass=\"opttbldata\">")) {
-				String subStringResponse = responseData.substring(
-						responseData.indexOf("<divclass=\"opttbldata\">"),
+				String subStringResponse = responseData.substring(responseData.indexOf("<divclass=\"opttbldata\">"),
 						responseData.indexOf("</table></div>"));
 				subStringResponse = subStringResponse.replace(subStringResponse
-						.substring(subStringResponse.indexOf("<thead>"),
-								subStringResponse.indexOf("</thead>")), "");
-				subStringResponse = subStringResponse
-						.replace(
-								"<divclass=\"opttbldata\"><tableid=\"octable\"width=\"100%\"border=\"0\"cellpadding=\"0\"cellspacing=\"0\"></thead>",
-								"");
+						.substring(subStringResponse.indexOf("<thead>"), subStringResponse.indexOf("</thead>")), "");
+				subStringResponse = subStringResponse.replace(
+						"<divclass=\"opttbldata\"><tableid=\"octable\"width=\"100%\"border=\"0\"cellpadding=\"0\"cellspacing=\"0\"></thead>",
+						"");
 				String[] arrOfStr = subStringResponse.split("</tr>");
 
 				for (int i = 0; i < arrOfStr.length; i++) {
@@ -37,15 +37,24 @@ public class ParserOptionChain {
 //						tableRowList.add(arrOfStr[i]);
 					}
 					OptionChainItemModal optionChainItem = parseOptionChainRow(arrOfStr[i]);
-					System.out.println("################# optionChainItem : "+optionChainItem.getStrikePrice());
-					if(optionChainItem.getStrikePrice().equals("11750.00")){
-						System.out.println("################# optionChainItem value: "+optionChainItem.getCallLastTradingPrice());
+//					System.out.println("################# optionChainItem : "+optionChainItem.getStrikePrice());
+					if (optionChainItem.getStrikePrice().equals("11750.00")) {
+//						System.out.println("################# optionChainItem value: "+optionChainItem.getCallLastTradingPrice());
 					}
-					if(optionChainItem != null && Utils.isValidString(optionChainItem.getStrikePrice())){
+					if (optionChainItem != null && Utils.isValidString(optionChainItem.getStrikePrice())) {
 						optionChainModal = new OptionChainModal();
-						optionChainModal.setStrickPrice(optionChainItem.getStrikePrice());
 						optionChainModal.setExpiryDate(expiryDate);
 						optionChainModal.setOptionChainItem(optionChainItem);
+						if (Utils.isValidString(stockCurrentPrice)) {
+							String[] arrayOfstr = stockCurrentPrice.split(" ");
+							if (Utils.isValidString(arrayOfstr[0]) && Utils.isValidString(arrOfStr[1])) {
+								optionChainModal.setStockSymbol(arrayOfstr[0].trim());
+								optionChainModal.setStrickCurrentPrice(arrayOfstr[1].trim());
+							}
+						}
+//						System.out.println("################### getStockSymbol :" + optionChainModal.getStockSymbol());
+//						System.out.println("################### getStrickCurrentPrice :"
+//								+ optionChainModal.getStrickCurrentPrice());
 						optionChainList.add(optionChainModal);
 					}
 				}
@@ -53,17 +62,37 @@ public class ParserOptionChain {
 		}
 //		System.out.println("################# optionChainList length : "+optionChainList.size());
 	}
-	
-	private static String parseExpiryDate(String responseData){
-		String spanElement = responseData.substring(responseData.indexOf("<span>ExpiryDate"), responseData.indexOf("</span></form>"));
-		String selectElement = spanElement.substring(spanElement.indexOf("<selectstyle=\"width:100px\"id=\"date\"name=\"date\"onchange=\"document.forms['ocForm'].submit();\"class=\"goodTextBox\">"), spanElement.indexOf("</select>"));
-		selectElement = selectElement.replace("<selectstyle=\"width:100px\"id=\"date\"name=\"date\"onchange=\"document.forms['ocForm'].submit();\"class=\"goodTextBox\">", "");
-		String[] arrOfStr = selectElement.split("</option>"); 
+
+	private static String parseStockSymbol(String responseData) {
+		if (Utils.isValidString(responseData)) {
+			String stockSymbolData = responseData.substring(responseData.indexOf("Underlying Index: "),
+					responseData.indexOf("</b>"));
+//			System.out.println("################### stockSymbolData :" + stockSymbolData);
+			stockSymbolData = stockSymbolData.replace(stockSymbolData
+					.substring(stockSymbolData.indexOf("Underlying Index: "), stockSymbolData.indexOf(">")), "");
+			stockSymbolData = stockSymbolData.replace(">", "");
+			return stockSymbolData;
+		}
+		return null;
+	}
+
+	private static String parseExpiryDate(String responseData) {
+		String spanElement = responseData.substring(responseData.indexOf("<span>ExpiryDate"),
+				responseData.indexOf("</span></form>"));
+		String selectElement = spanElement.substring(spanElement.indexOf(
+				"<selectstyle=\"width:100px\"id=\"date\"name=\"date\"onchange=\"document.forms['ocForm'].submit();\"class=\"goodTextBox\">"),
+				spanElement.indexOf("</select>"));
+		selectElement = selectElement.replace(
+				"<selectstyle=\"width:100px\"id=\"date\"name=\"date\"onchange=\"document.forms['ocForm'].submit();\"class=\"goodTextBox\">",
+				"");
+		String[] arrOfStr = selectElement.split("</option>");
 		String expiryDate = "";
 		for (int i = 0; i < arrOfStr.length; i++) {
-			if(arrOfStr[i].contains("selected")){
-				expiryDate = arrOfStr[i].replace(arrOfStr[i].substring(arrOfStr[i].indexOf("<"), arrOfStr[i].indexOf(">")), "").replace(">", "");
-				System.out.println("################# :expiryDate "+expiryDate);
+			if (arrOfStr[i].contains("selected")) {
+				expiryDate = arrOfStr[i]
+						.replace(arrOfStr[i].substring(arrOfStr[i].indexOf("<"), arrOfStr[i].indexOf(">")), "")
+						.replace(">", "");
+//				System.out.println("################# :expiryDate " + expiryDate);
 			}
 		}
 		return expiryDate;
@@ -77,73 +106,80 @@ public class ParserOptionChain {
 			boolean isCallFlag = true;
 			for (int i = 0; i < arrOfStr.length; i++) {
 				if (Utils.isValidString(arrOfStr[i])) {
-					arrOfStr[i] = arrOfStr[i]
-							.replace(
-									"<!--<td><ahref=\"javascript:popup1('','','1')\">Quote</a></td><td><ahref=\"javascript:popup1('','','','','CE')\"><imgsrc=\"/images/print3.gif\"></a></td>-->",
-									"");
-					arrOfStr[i] = arrOfStr[i]
-							.replace(
-									"<!--<td><ahref=\"javascript:popup1('','','1')\">Quote</a></td><td><ahref=\"javascript:popup1('','','','','PE')\"><imgsrc=\"/images/print3.gif\"></a></td>-->",
-									"");
+					arrOfStr[i] = arrOfStr[i].replace(
+							"<!--<td><ahref=\"javascript:popup1('','','1')\">Quote</a></td><td><ahref=\"javascript:popup1('','','','','CE')\"><imgsrc=\"/images/print3.gif\"></a></td>-->",
+							"");
+					arrOfStr[i] = arrOfStr[i].replace(
+							"<!--<td><ahref=\"javascript:popup1('','','1')\">Quote</a></td><td><ahref=\"javascript:popup1('','','','','PE')\"><imgsrc=\"/images/print3.gif\"></a></td>-->",
+							"");
 					arrOfStr[i] = arrOfStr[i].replace("<td>", "");
-					// System.out.println("#########################  "+arrOfStr[i].toString());
-					if ((arrOfStr[i].contains("ylwbg")
-							|| arrOfStr[i].contains("nobg")
-							|| arrOfStr[i].contains("grybg"))
+					// System.out.println("######################### "+arrOfStr[i].toString());
+					if ((arrOfStr[i].contains("ylwbg") || arrOfStr[i].contains("nobg") || arrOfStr[i].contains("grybg"))
 							&& !arrOfStr[i].contains("Arial,Helvetica,sans-serif")) {
 						if (arrOfStr[i].contains("<ahref")) {
 							if (arrOfStr[i].contains("<b>")) {
 								arrOfStr[i] = arrOfStr[i].substring(arrOfStr[i].indexOf("<b>"),
-												arrOfStr[i].indexOf("</b>"));
-								arrOfStr[i] = arrOfStr[i]+"</b>";
+										arrOfStr[i].indexOf("</b>"));
+								arrOfStr[i] = arrOfStr[i] + "</b>";
 								arrOfStr[i] = arrOfStr[i].replace("<b>", "").replace("</b>", "");
 //								arrOfStr[i] = arrOfStr[i].replace("<b>", "<StrikePrice>").replace("</b>", "</StrikePrice>");
 								optionChainItem.setStrikePrice(arrOfStr[i]);
 								isCallFlag = false;
 								tableDetailList.add(arrOfStr[i]);
-//								System.out
-//										.println("#########################  Strick Price : "
-//												+ arrOfStr[i]);
-							}else{
+//								System.out.println("#########################  Strick Price : " + arrOfStr[i]);
+							} else {
 								arrOfStr[i] = arrOfStr[i].replace("<!--End-->", "");
-								if(arrOfStr[i].contains("nobg")){
-									if(arrOfStr[i].contains("-->")){
-										arrOfStr[i] = arrOfStr[i].replace(arrOfStr[i].substring(arrOfStr[i].indexOf("<tdclass=\"nobg\">"), arrOfStr[i].indexOf("-->")), "");
-									}else{
+								if (arrOfStr[i].contains("nobg")) {
+									if (arrOfStr[i].contains("-->")) {
+										arrOfStr[i] = arrOfStr[i].replace(
+												arrOfStr[i].substring(arrOfStr[i].indexOf("<tdclass=\"nobg\">"),
+														arrOfStr[i].indexOf("-->")),
+												"");
+									} else {
 										arrOfStr[i] = arrOfStr[i].replace("<tdclass=\"nobg\">", "");
 									}
-								
-								arrOfStr[i] = arrOfStr[i].replace("-->","");
-								arrOfStr[i] = arrOfStr[i].replace(arrOfStr[i].substring(arrOfStr[i].indexOf("<ahref="),arrOfStr[i].indexOf(">")), "");
-								arrOfStr[i] =arrOfStr[i].substring(arrOfStr[i].indexOf(">"),arrOfStr[i].indexOf("<"));
-								arrOfStr[i] = arrOfStr[i].replace(">","");
-								}else{
-									if(arrOfStr[i].contains("-->")){
-										arrOfStr[i] = arrOfStr[i].replace(arrOfStr[i].substring(arrOfStr[i].indexOf("<tdclass=\"ylwbg\">"), arrOfStr[i].indexOf("-->")), "");
-										arrOfStr[i] = arrOfStr[i].replace("-->","");
-									}else{
+
+									arrOfStr[i] = arrOfStr[i].replace("-->", "");
+									arrOfStr[i] = arrOfStr[i].replace(arrOfStr[i]
+											.substring(arrOfStr[i].indexOf("<ahref="), arrOfStr[i].indexOf(">")), "");
+									arrOfStr[i] = arrOfStr[i].substring(arrOfStr[i].indexOf(">"),
+											arrOfStr[i].indexOf("<"));
+									arrOfStr[i] = arrOfStr[i].replace(">", "");
+								} else {
+									if (arrOfStr[i].contains("-->")) {
+										arrOfStr[i] = arrOfStr[i].replace(
+												arrOfStr[i].substring(arrOfStr[i].indexOf("<tdclass=\"ylwbg\">"),
+														arrOfStr[i].indexOf("-->")),
+												"");
+										arrOfStr[i] = arrOfStr[i].replace("-->", "");
+									} else {
 										arrOfStr[i] = arrOfStr[i].replace("<tdclass=\"ylwbg\">", "");
 									}
-									arrOfStr[i] = arrOfStr[i].replace(arrOfStr[i].substring(arrOfStr[i].indexOf("<ahref="),arrOfStr[i].indexOf(">")), "");
-									arrOfStr[i] =arrOfStr[i].substring(arrOfStr[i].indexOf(">"),arrOfStr[i].indexOf("<"));
-									arrOfStr[i] = arrOfStr[i].replace(">","");
+									arrOfStr[i] = arrOfStr[i].replace(arrOfStr[i]
+											.substring(arrOfStr[i].indexOf("<ahref="), arrOfStr[i].indexOf(">")), "");
+									arrOfStr[i] = arrOfStr[i].substring(arrOfStr[i].indexOf(">"),
+											arrOfStr[i].indexOf("<"));
+									arrOfStr[i] = arrOfStr[i].replace(">", "");
 								}
-								if(isCallFlag){
+								if (isCallFlag) {
 									setCallOptionChainItem(i, arrOfStr[i], optionChainItem);
-								}else{
+								} else {
 									setPutOptionChainItem(i, arrOfStr[i], optionChainItem);
 								}
 							}
 						} else {
-							arrOfStr[i] = arrOfStr[i]+"</td>";
-							arrOfStr[i] = arrOfStr[i].substring(arrOfStr[i].indexOf("<tdclass="),arrOfStr[i].indexOf( "</td>"));
-							arrOfStr[i] = arrOfStr[i].replace(arrOfStr[i].substring(arrOfStr[i].indexOf("<"),arrOfStr[i].indexOf( ">"))+">", "");
+							arrOfStr[i] = arrOfStr[i] + "</td>";
+							arrOfStr[i] = arrOfStr[i].substring(arrOfStr[i].indexOf("<tdclass="),
+									arrOfStr[i].indexOf("</td>"));
+							arrOfStr[i] = arrOfStr[i].replace(
+									arrOfStr[i].substring(arrOfStr[i].indexOf("<"), arrOfStr[i].indexOf(">")) + ">",
+									"");
 //							System.out.println("############arrOfStr[i] :  "+arrOfStr[i]);
-							if(isCallFlag){
-								
+							if (isCallFlag) {
+
 								setCallOptionChainItem(i, arrOfStr[i], optionChainItem);
 //								 = "<Call>"+arrOfStr[i]+"</Call>";
-							}else{
+							} else {
 								setPutOptionChainItem(i, arrOfStr[i], optionChainItem);
 //								arrOfStr[i] = "<Put>"+arrOfStr[i]+"</Put>";
 							}
@@ -155,66 +191,87 @@ public class ParserOptionChain {
 		}
 		return optionChainItem;
 	}
-	
-	private static void setCallOptionChainItem(int index, String item, OptionChainItemModal optionChainItem){
-		if(item.equals("-")){
+
+	private static void setCallOptionChainItem(int index, String item, OptionChainItemModal optionChainItem) {
+		if (item.equals("-")) {
 			item = "0";
 		}
 		item = item.replaceAll(",", "");
 //		System.out.println("Call Index : "+index+" : Value : "+item);
-		
-		  switch (index){
-		  case 3: optionChainItem.setCallOpenInterest(item);
-		  break;
-		  case 4: optionChainItem.setCallChangeInOpenInterest(item);
-		  break;
-		  case 5: optionChainItem.setCallVolume(item);
-		  break;
-		  case 6: optionChainItem.setCallImpliedVolatility(item);
-		  break;
-		  case 7: optionChainItem.setCallLastTradingPrice(item);
-		  break;
-		  case 8: optionChainItem.setCallNetChange(item);
-		  break;
-		  case 9: optionChainItem.setCallBidQuantity(item);
-		  break;
-		  case 10: optionChainItem.setCallBidPrice(item);
-		  break;
-		  case 11: optionChainItem.setCallAskPrice(item);
-		  break;
-		  case 12: optionChainItem.setCallAskQuantity(item);
-		  break;
-		  default: 
-		  }
+
+		switch (index) {
+		case 3:
+			optionChainItem.setCallOpenInterest(item);
+			break;
+		case 4:
+			optionChainItem.setCallChangeInOpenInterest(item);
+			break;
+		case 5:
+			optionChainItem.setCallVolume(item);
+			break;
+		case 6:
+			optionChainItem.setCallImpliedVolatility(item);
+			break;
+		case 7:
+			optionChainItem.setCallLastTradingPrice(item);
+			break;
+		case 8:
+			optionChainItem.setCallNetChange(item);
+			break;
+		case 9:
+			optionChainItem.setCallBidQuantity(item);
+			break;
+		case 10:
+			optionChainItem.setCallBidPrice(item);
+			break;
+		case 11:
+			optionChainItem.setCallAskPrice(item);
+			break;
+		case 12:
+			optionChainItem.setCallAskQuantity(item);
+			break;
+		default:
+		}
 	}
-	private static void setPutOptionChainItem(int index, String item, OptionChainItemModal optionChainItem){
-		if(item.equals("-")){
+
+	private static void setPutOptionChainItem(int index, String item, OptionChainItemModal optionChainItem) {
+		if (item.equals("-")) {
 			item = "0";
 		}
 		item = item.replaceAll(",", "");
 //	System.out.println("Put Index : "+index+" : Value : "+item);
-	
-		  switch (index){
-		  case 14: optionChainItem.setPutBidQuantity(item);
-		  break;
-		  case 15: optionChainItem.setPutBidPrice(item);
-		  break;
-		  case 16: optionChainItem.setPutAskPrice(item);
-		  break;
-		  case 17: optionChainItem.setPutAskQuantity(item);
-		  break;
-		  case 18: optionChainItem.setPutNetChange(item);
-		  break;
-		  case 19: optionChainItem.setPutLastTradingPrice(item);
-		  break;
-		  case 20: optionChainItem.setPutImpliedVolatility(item);
-		  break;
-		  case 21: optionChainItem.setPutVolume(item);
-		  break;
-		  case 22: optionChainItem.setPutChangeInOpenInterest(item);
-		  break;
-		  case 23: optionChainItem.setPutOpenInterest(item);
-		  break;
-		  }
+
+		switch (index) {
+		case 14:
+			optionChainItem.setPutBidQuantity(item);
+			break;
+		case 15:
+			optionChainItem.setPutBidPrice(item);
+			break;
+		case 16:
+			optionChainItem.setPutAskPrice(item);
+			break;
+		case 17:
+			optionChainItem.setPutAskQuantity(item);
+			break;
+		case 18:
+			optionChainItem.setPutNetChange(item);
+			break;
+		case 19:
+			optionChainItem.setPutLastTradingPrice(item);
+			break;
+		case 20:
+			optionChainItem.setPutImpliedVolatility(item);
+			break;
+		case 21:
+			optionChainItem.setPutVolume(item);
+			break;
+		case 22:
+			optionChainItem.setPutChangeInOpenInterest(item);
+			break;
+		case 23:
+			optionChainItem.setPutOpenInterest(item);
+			break;
+		}
 	}
 }

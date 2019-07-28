@@ -7,6 +7,13 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.Date;
+import java.util.Timer;
+import java.util.TimerTask;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+
+import org.apache.axis.Handler;
 
 import com.service.webservice.modal.OptionChainItemModal;
 import com.service.webservice.modal.OptionChainModal;
@@ -19,22 +26,26 @@ public class MysqlCon {
 	public static String name = null;
 	public static String place = null;
 	public static String age = null;
-
+	public static boolean isSchedulerStop = false;
+	public static Timer timer = new Timer();
 	public static void main(String args[]) {
-			 new Thread(new Runnable() {
-			        public void run(){
-			        	try {
-			        		
-							String responseData = ServiceOptionChain.sendGET("https://www.nseindia.com/live_market/dynaContent/live_watch/option_chain/optionKeys.jsp?segmentLink=17&instrument=OPTIDX&symbol=NIFTY");
-//			        			String responseData = ServiceOptionChain.sendGET("https://www.nseindia.com/live_market/dynaContent/live_watch/option_chain/optionKeys.jsp?symbolCode=818&symbol=ITC&symbol=ITC&instrument=OPTSTK&date=-&segmentLink=17&segmentLink=17");
-							System.out.println("################# optionChainList : "+ParserOptionChain.optionChainList.size());
-							insertDataInOptionChain();
-						} catch (IOException e) {
-							// TODO Auto-generated catch block
-							e.printStackTrace();
-						}
-			        }
-			    }).start();
+		 // Instantiate Timer Object
+		SchedularTask st = new SchedularTask(isSchedulerStop, timer); // Instantiate SheduledTask class
+		timer.schedule(st, 1000, 10*1000); // Create Repetitively task for every 1 secs
+		stopSchedular();
+	}
+	
+	public static void stopSchedular() {
+		class Demo extends TimerTask {
+		      public void run() {
+		            System.out.println("Hello World");
+		            SchedularTask.mTimer = timer;
+		            SchedularTask.isSchedularStop = true;
+		            
+		            timer.cancel();
+		       }
+		  }
+		timer.schedule(new Demo(), 60*1000);
 	}
 
 	public static Connection getConnection() {
@@ -79,9 +90,9 @@ public class MysqlCon {
 		boolean flag = false;
 		if(ParserOptionChain.optionChainList != null && !ParserOptionChain.optionChainList.isEmpty() ){
 			if(ParserOptionChain.optionChainList.get(0) != null){
-				String time = Utils.getCurrentTime();
+//				String time = Utils.getCurrentTime();
+				String time = Long.toString(new Date().getTime());
 				Connection conn = getConnection();
-				System.out.println("################# conn : "+conn.toString());
 				PreparedStatement pst;
 				try {
 					for(int i =0;i < ParserOptionChain.optionChainList.size();i++ ){
@@ -91,6 +102,7 @@ public class MysqlCon {
 					pst = conn
 							.prepareStatement("insert into tbl_optionchain ("
 									+ "Stock_Symbol, "
+									+ "Stock_CurrentPrice, "
 									+ "Strike_Price, "
 									+ "Put_Bid_price, "
 									+ "Put_ask_Price, "
@@ -113,31 +125,32 @@ public class MysqlCon {
 									+ "Call_ChangeInOpenInterest, "
 									+ "Call_Openinterest, "
 									+ "LastUpdateDateTime, "
-									+ "ExpiryDate) values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
-					pst.setString(1, "Nifty50");
-					pst.setFloat(2, Float.parseFloat(optionChainItem.getStrikePrice()));
-					pst.setFloat(3, Float.parseFloat(optionChainItem.getPutBidPrice()));
-					pst.setFloat(4, Float.parseFloat(optionChainItem.getPutAskPrice()));
-					pst.setFloat(5, Float.parseFloat(optionChainItem.getPutAskQuantity()));
-					pst.setFloat(6, Float.parseFloat(optionChainItem.getPutBidQuantity()));
-					pst.setFloat(7, Float.parseFloat(optionChainItem.getPutNetChange()));
-					pst.setFloat(8, Float.parseFloat(optionChainItem.getPutLastTradingPrice()));
-					pst.setFloat(9, Float.parseFloat(optionChainItem.getPutImpliedVolatility()));
-					pst.setFloat(10, Float.parseFloat(optionChainItem.getPutVolume()));
-					pst.setFloat(11, Float.parseFloat(optionChainItem.getPutChangeInOpenInterest()));
-					pst.setFloat(12, Float.parseFloat(optionChainItem.getPutOpenInterest()));
-					pst.setFloat(13, Float.parseFloat(optionChainItem.getCallBidPrice()));
-					pst.setFloat(14, Float.parseFloat(optionChainItem.getCallAskPrice()));
-					pst.setFloat(15, Float.parseFloat(optionChainItem.getCallAskQuantity()));
-					pst.setFloat(16, Float.parseFloat(optionChainItem.getCallBidQuantity()));
-					pst.setFloat(17, Float.parseFloat(optionChainItem.getCallNetChange()));
-					pst.setFloat(18, Float.parseFloat(optionChainItem.getCallLastTradingPrice()));
-					pst.setFloat(19, Float.parseFloat(optionChainItem.getCallImpliedVolatility()));
-					pst.setFloat(20, Float.parseFloat(optionChainItem.getCallVolume()));
-					pst.setFloat(21, Float.parseFloat(optionChainItem.getCallChangeInOpenInterest()));
-					pst.setFloat(22, Float.parseFloat(optionChainItem.getCallOpenInterest()));
-					pst.setString(23, time);
-					pst.setString(24, optionChainModal.getExpiryDate());
+									+ "ExpiryDate) values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
+					pst.setString(1, optionChainModal.getStockSymbol());
+					pst.setFloat(2, Float.parseFloat(optionChainModal.getStrickCurrentPrice()));
+					pst.setFloat(3, Float.parseFloat(optionChainItem.getStrikePrice()));
+					pst.setFloat(4, Float.parseFloat(optionChainItem.getPutBidPrice()));
+					pst.setFloat(5, Float.parseFloat(optionChainItem.getPutAskPrice()));
+					pst.setFloat(6, Float.parseFloat(optionChainItem.getPutAskQuantity()));
+					pst.setFloat(7, Float.parseFloat(optionChainItem.getPutBidQuantity()));
+					pst.setFloat(8, Float.parseFloat(optionChainItem.getPutNetChange()));
+					pst.setFloat(9, Float.parseFloat(optionChainItem.getPutLastTradingPrice()));
+					pst.setFloat(10, Float.parseFloat(optionChainItem.getPutImpliedVolatility()));
+					pst.setFloat(11, Float.parseFloat(optionChainItem.getPutVolume()));
+					pst.setFloat(12, Float.parseFloat(optionChainItem.getPutChangeInOpenInterest()));
+					pst.setFloat(13, Float.parseFloat(optionChainItem.getPutOpenInterest()));
+					pst.setFloat(14, Float.parseFloat(optionChainItem.getCallBidPrice()));
+					pst.setFloat(15, Float.parseFloat(optionChainItem.getCallAskPrice()));
+					pst.setFloat(16, Float.parseFloat(optionChainItem.getCallAskQuantity()));
+					pst.setFloat(17, Float.parseFloat(optionChainItem.getCallBidQuantity()));
+					pst.setFloat(18, Float.parseFloat(optionChainItem.getCallNetChange()));
+					pst.setFloat(19, Float.parseFloat(optionChainItem.getCallLastTradingPrice()));
+					pst.setFloat(20, Float.parseFloat(optionChainItem.getCallImpliedVolatility()));
+					pst.setFloat(21, Float.parseFloat(optionChainItem.getCallVolume()));
+					pst.setFloat(22, Float.parseFloat(optionChainItem.getCallChangeInOpenInterest()));
+					pst.setFloat(23, Float.parseFloat(optionChainItem.getCallOpenInterest()));
+					pst.setString(24, time);
+					pst.setString(25, optionChainModal.getExpiryDate());
 					pst.execute();
 					
 					pst.close();
