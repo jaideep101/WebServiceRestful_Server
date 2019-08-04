@@ -19,6 +19,7 @@ import com.service.webservice.modal.OptionChainItemModal;
 import com.service.webservice.modal.OptionChainModal;
 import com.service.webservice.parser.ParserOptionChain;
 import com.service.webservice.service.ServiceOptionChain;
+import com.service.webservice.utilities.StockMarketConstants;
 import com.service.webservice.utilities.Utils;
 
 public class MysqlCon {
@@ -30,9 +31,20 @@ public class MysqlCon {
 	public static Timer timer = new Timer();
 	public static void main(String args[]) {
 		 // Instantiate Timer Object
-		SchedularTask st = new SchedularTask(isSchedulerStop, timer); // Instantiate SheduledTask class
-		timer.schedule(st, 1000, 10*1000); // Create Repetitively task for every 1 secs
-		stopSchedular();
+		
+		System.out.println("############### run timer");
+		try {
+			String responseData = ServiceOptionChain.sendGET(StockMarketConstants.NIFTY50_URL);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+//		System.out.println("################# optionChainList : "+ParserOptionChain.optionChainList.size());
+//		insertDataInOptionChain();
+		
+//		SchedularTask st = new SchedularTask(isSchedulerStop, timer); // Instantiate SheduledTask class
+//		timer.schedule(st, 1000, 10*1000); // Create Repetitively task for every 1 secs
+//		stopSchedular();
 	}
 	
 	public static void stopSchedular() {

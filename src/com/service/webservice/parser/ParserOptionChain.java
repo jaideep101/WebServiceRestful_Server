@@ -64,12 +64,16 @@ public class ParserOptionChain {
 	}
 
 	private static String parseStockSymbol(String responseData) {
+		String underlyingData = "Underlying Index: ";
 		if (Utils.isValidString(responseData)) {
-			String stockSymbolData = responseData.substring(responseData.indexOf("Underlying Index: "),
+			if(responseData.contains("Underlying Stock: ")) {
+				underlyingData = "Underlying Stock: ";
+			}
+			String stockSymbolData = responseData.substring(responseData.indexOf(underlyingData),
 					responseData.indexOf("</b>"));
 //			System.out.println("################### stockSymbolData :" + stockSymbolData);
 			stockSymbolData = stockSymbolData.replace(stockSymbolData
-					.substring(stockSymbolData.indexOf("Underlying Index: "), stockSymbolData.indexOf(">")), "");
+					.substring(stockSymbolData.indexOf(underlyingData), stockSymbolData.indexOf(">")), "");
 			stockSymbolData = stockSymbolData.replace(">", "");
 			return stockSymbolData;
 		}
