@@ -33,31 +33,34 @@ public class MysqlCon {
 		 // Instantiate Timer Object
 		
 		System.out.println("############### run timer");
-		try {
-			String responseData = ServiceOptionChain.sendGET(StockMarketConstants.NIFTY50_URL);
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+//		try {
+//			String responseData = ServiceOptionChain.sendGET(StockMarketConstants.NIFTY50_URL);
+//			insertDataInOptionChain(StockMarketConstants.TABLE_OPTIONCHAIN);
+//		} catch (IOException e) {
+//			// TODO Auto-generated catch block
+//			e.printStackTrace();
+//		}
 //		System.out.println("################# optionChainList : "+ParserOptionChain.optionChainList.size());
 //		insertDataInOptionChain();
 		
 //		SchedularTask st = new SchedularTask(isSchedulerStop, timer); // Instantiate SheduledTask class
 //		timer.schedule(st, 1000, 10*1000); // Create Repetitively task for every 1 secs
 //		stopSchedular();
+		
+		OnceADayTask.startTask();
 	}
 	
 	public static void stopSchedular() {
-		class Demo extends TimerTask {
+		class StopSchedular extends TimerTask {
 		      public void run() {
-		            System.out.println("Hello World");
+		            System.out.println("Schedular End");
 		            SchedularTask.mTimer = timer;
 		            SchedularTask.isSchedularStop = true;
 		            
 		            timer.cancel();
 		       }
 		  }
-		timer.schedule(new Demo(), 60*1000);
+		timer.schedule(new StopSchedular(), 60*1000);
 	}
 
 	public static Connection getConnection() {
@@ -98,7 +101,7 @@ public class MysqlCon {
 		}
 		return resultSet;
 	}
-	public static boolean insertDataInOptionChain() {
+	public static boolean insertDataInOptionChain(String tableName) {
 		boolean flag = false;
 		if(ParserOptionChain.optionChainList != null && !ParserOptionChain.optionChainList.isEmpty() ){
 			if(ParserOptionChain.optionChainList.get(0) != null){
@@ -112,7 +115,7 @@ public class MysqlCon {
 						OptionChainItemModal optionChainItem = optionChainModal.getOptionChainItem();
 					
 					pst = conn
-							.prepareStatement("insert into tbl_optionchain ("
+							.prepareStatement("insert into "+tableName+" ("
 									+ "Stock_Symbol, "
 									+ "Stock_CurrentPrice, "
 									+ "Strike_Price, "

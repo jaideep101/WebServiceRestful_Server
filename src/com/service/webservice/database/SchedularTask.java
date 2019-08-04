@@ -30,7 +30,7 @@ public class SchedularTask extends TimerTask {
 				System.out.println("############### run timer");
 				String responseData = ServiceOptionChain.sendGET(StockMarketConstants.NIFTY50_URL);
 				System.out.println("################# optionChainList : "+ParserOptionChain.optionChainList.size());
-				mSqlCon.insertDataInOptionChain();
+				mSqlCon.insertDataInOptionChain(StockMarketConstants.TABLE_OPTIONCHAIN);
 			}
 			
 		} catch (IOException e) {
